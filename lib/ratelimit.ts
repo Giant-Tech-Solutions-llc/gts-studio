@@ -36,7 +36,13 @@ export async function checkRateLimit(userKey: string): Promise<RateResult> {
   if (!limiter) {
     return { success: true, limit: 0, remaining: 0, retryAfter: 0 };
   }
-  const { success, limit, remaining, reset } = await limiter.limit(userKey);
-  const retryAfter = success ? 0 : Math.max(1, Math.ceil((reset - Date.now()) / 1000));
-  return { success, limit, remaining, retryAfter };
+  try {
+    const { success, limit, remaining, reset } = await limiter.limit(userKey);
+    const retryAfter = success ? 0 : Math.max(1, Math.ceil((reset - Date.now()) / 1000));
+    return { success, limit, remaining, retryAfter };
+  } catch (err) {
+    // Fail open: a KV outage must never take down the API.
+    console.error('[ratelimit] limiter error — allowing request', err);
+    return { success: true, limit: 0, remaining: 0, retryAfter: 0 };
+  }
 }

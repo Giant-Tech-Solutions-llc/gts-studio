@@ -52,9 +52,10 @@ export async function POST(req: Request) {
   const effectiveModel = resolveModel(mode, model);
   const system = buildSystemPrompt(mode, stage.renderer);
 
-  const anthropic = getAnthropic();
-
   try {
+    // Inside the try so a missing/invalid key maps to a clean message
+    // instead of an unhandled 500.
+    const anthropic = getAnthropic();
     const stream = await withRetry(() =>
       Promise.resolve(
         anthropic.messages.stream({
